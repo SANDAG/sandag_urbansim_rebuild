@@ -1,0 +1,6 @@
+[pycharm]
+.idea/*
+
+[data]
+data/*
+dbconfig.yml
