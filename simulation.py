@@ -4,6 +4,10 @@ import pandana as pdna
 import urbansim.sim.simulation as sim
 from urbansim_defaults import models
 
+@sim.column('parcels', 'parcel_acres')
+def parcel_acres(parcels):
+    return parcels.acres
+
 @sim.model('build_networks')
 def build_networks(parcels):
     st = pd.HDFStore('data/urbansim.h5', "r")
@@ -24,4 +28,4 @@ sim.run(['neighborhood_vars'])
 
 nodes = sim.get_table('nodes')
 
-print nodes.toframe(nodes.local_columns)
+#print nodes.toframe(nodes.local_columns)

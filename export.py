@@ -7,7 +7,7 @@ urbansim_engine = create_engine(get_connection_string("configs/dbconfig.yml", 'u
 
 nodes_sql = 'SELECT node as node_id, x, y FROM urbansim.nodes'
 edges_sql = 'SELECT from_node as [from], to_node as [to], distance as [weight] FROM urbansim.edges'
-parcels_sql = 'SELECT parcel_id, parcel_acres, centroid.STX as x, centroid.STY as y FROM urbansim.parcels'
+parcels_sql = 'SELECT parcel_id, parcel_acres as acres, centroid.STX as x, centroid.STY as y FROM urbansim.parcels'
 buildings_sql = 'SELECT id as building_id, parcel_id FROM urbansim.buildings'
 households_sql = 'SELECT household_id, building_id, income FROM urbansim.households'
 
