@@ -1,0 +1,23 @@
+store: urbansim.h5
+
+build_networks:
+  name: urbansim.h5
+  max_distance: 5 #Distance is time (minutes)
+
+# WHAT DO THESE CODES MEAN????
+building_sqft_per_job:
+  -1: 400
+  1: 400
+  2: 400
+  3: 400
+  4: 355
+  5: 1161
+  6: 470
+  7: 661
+  8: 960
+  9: 825
+  10: 445
+  11: 445
+  12: 383
+  13: 383
+  14: 383
