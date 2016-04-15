@@ -10,14 +10,14 @@ variable_definitions:
     decay: flat
     apply: np.log1p
 
-#  - name: mean_nonres_rent_2000m
-#    aggregation: average
-#    dataframe: buildings
-#    decay: flat
-#    filters:
-#    - non_residential_sqft > 0
-#    radius: 2000
-#    varname: nonres_rent_per_sqft
+  - name: mean_nonres_rent_2000m
+    aggregation: average
+    dataframe: buildings
+    decay: flat
+    filters:
+    - non_residential_sqft > 0
+    radius: 2000
+    varname: non_residential_rent_per_sqft
 
   - name: jobs_1500m
     dataframe: jobs
@@ -213,12 +213,12 @@ variable_definitions:
     decay: flat
     apply: np.log1p
 
-#  - name: job_spaces_3000m
-#    dataframe: buildings
-#    varname: job_spaces
-#    radius: 3000
-#    aggregation: sum
-#    decay: flat
+  - name: job_spaces_3000m
+    dataframe: buildings
+    varname: job_spaces
+    radius: 3000
+    aggregation: sum
+    decay: flat
 
   - name: jobs_3000m
     dataframe: jobs
