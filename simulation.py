@@ -73,10 +73,12 @@ def scheduled_development_events(scheduled_development_events, buildings):
         all_buildings = merge(b,sched_dev[b.columns])
         sim.add_table("buildings", all_buildings)
 
-sim.run(['build_networks', 'scheduled_development_events', 'neighborhood_vars'])
+
+sim.run(['build_networks'])
+
+sim.run(['scheduled_development_events', 'neighborhood_vars'], years=xrange(2015,2015))
 
 nodes = sim.get_table('nodes')
 results_df = nodes.to_frame()
 
 results_df.to_csv('data/results.csv')
-
