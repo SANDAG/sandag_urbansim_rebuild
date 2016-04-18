@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import pandas as pd
 import pandana as pdna
@@ -5,11 +6,17 @@ import urbansim.sim.simulation as sim
 from urbansim.utils import misc
 from urbansim_defaults import models
 
-#sim.broadcast('building_sqft_per_job', 'buildings', cast_index=True, onto_on=['luz_id','building_type_id'])
-
 @sim.table('building_sqft_per_job', cache=True)
 def building_sqft_per_job(store):
     return store['building_sqft_per_job']
+
+@sim.table('scheduled_development_events', cache=True)
+def scheduled_development_events(store):
+    return store['scheduled_development_events']
+
+@sim.column('buildings', 'luz_id')
+def luz_id(buildings, parcels):
+    return misc.reindex(parcels.luz_id, buildings.parcel_id)
 
 @sim.column('buildings', 'sqft_per_job', cache=True)
 def sqft_per_job(buildings, building_sqft_per_job):
@@ -19,10 +26,6 @@ def sqft_per_job(buildings, building_sqft_per_job):
     merge_df.loc[merge_df.sqft_per_emp < 40, 'sqft_per_emp'] = 40
     return merge_df.sqft_per_emp
 
-@sim.column('buildings', 'luz_id')
-def luz_id(buildings, parcels):
-    return misc.reindex(parcels.luz_id, buildings.parcel_id)
-
 @sim.column('parcels', 'parcel_acres')
 def parcel_acres(parcels):
     return parcels.acres
@@ -30,6 +33,12 @@ def parcel_acres(parcels):
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
     return settings['building_sqft_per_job']
+
+def get_year():
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2015
+    return year
 
 @sim.model('build_networks')
 def build_networks(parcels):
@@ -45,9 +54,29 @@ def build_networks(parcels):
     p['node_id'] = net.get_node_ids(p['x'], p['y'])
     sim.add_table("parcels", p)
 
-sim.run(['build_networks', 'neighborhood_vars'])
+@sim.model('scheduled_development_events')
+def scheduled_development_events(scheduled_development_events, buildings):
+    year = get_year()
+    sched_dev = scheduled_development_events.to_frame()
+    sched_dev = sched_dev[sched_dev.year_built==year]
+    sched_dev['residential_sqft'] = sched_dev.sqft_per_unit*sched_dev.residential_units
+    #TODO: The simple division here is not consistent with other job_spaces calculations
+    sched_dev['job_spaces'] = sched_dev.non_residential_sqft/400
+    if len(sched_dev) > 0:
+        max_bid = buildings.index.values.max()
+        idx = np.arange(max_bid + 1,max_bid+len(sched_dev)+1)
+        sched_dev['building_id'] = idx
+        sched_dev = sched_dev.set_index('building_id')
+        from urbansim.developer.developer import Developer
+        merge = Developer(pd.DataFrame({})).merge
+        b = buildings.to_frame(buildings.local_columns)
+        all_buildings = merge(b,sched_dev[b.columns])
+        sim.add_table("buildings", all_buildings)
+
+sim.run(['build_networks', 'scheduled_development_events', 'neighborhood_vars'])
 
 nodes = sim.get_table('nodes')
-print nodes.to_frame()
+results_df = nodes.to_frame()
 
-#print nodes.toframe(nodes.local_columns)
+results_df.to_csv('data/results.csv')
+

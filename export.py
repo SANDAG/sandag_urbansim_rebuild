@@ -12,6 +12,10 @@ buildings_sql = 'SELECT id as building_id, parcel_id, development_type_id as bui
 households_sql = 'SELECT household_id, building_id, persons, age_of_head, income, children FROM urbansim.households'
 jobs_sql = 'SELECT job_id, building_id, sector_id FROM urbansim.jobs'
 building_sqft_per_job_sql = 'SELECT luz_id, development_type_id, sqft_per_emp FROM urbansim.building_sqft_per_job'
+scheduled_development_events_sql = """SELECT
+                                         scheduled_development_event_id, parcel_id, development_type_id as building_type_id
+                                         ,year_built, sqft_per_unit, residential_units, non_residential_sqft
+                                         ,improvement_value, res_price_per_sqft, nonres_rent_per_sqft as non_residential_rent_per_sqft FROM urbansim.scheduled_development_event"""
 
 nodes_df = pd.read_sql(nodes_sql, urbansim_engine, index_col='node_id')
 edges_df = pd.read_sql(edges_sql, urbansim_engine)
@@ -20,6 +24,7 @@ buildings_df = pd.read_sql(buildings_sql, urbansim_engine, index_col='building_i
 households_df = pd.read_sql(households_sql, urbansim_engine, index_col='household_id')
 jobs_df = pd.read_sql(jobs_sql, urbansim_engine, index_col='job_id')
 building_sqft_per_job_df = pd.read_sql(building_sqft_per_job_sql, urbansim_engine)
+scheduled_development_events_df = pd.read_sql(scheduled_development_events_sql, urbansim_engine, index_col='scheduled_development_event_id')
 
 building_sqft_per_job_df.sort_values(['luz_id', 'development_type_id'], inplace=True)
 building_sqft_per_job_df.set_index(['luz_id', 'development_type_id'], inplace=True)
@@ -35,3 +40,4 @@ with pd.HDFStore('data/urbansim.h5', mode='w') as store:
     store.put('households', households_df, format='t')
     store.put('jobs', jobs_df, format='t')
     store.put('building_sqft_per_job', building_sqft_per_job_df, format='t')
+    store.put('scheduled_development_events', scheduled_development_events_df, format='t')
