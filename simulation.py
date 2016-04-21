@@ -18,6 +18,10 @@ def scheduled_development_events(store):
 def luz_id(buildings, parcels):
     return misc.reindex(parcels.luz_id, buildings.parcel_id)
 
+@sim.column('buildings', 'building_sqft')
+def building_sqft(buildings):
+    return buildings.residential_sqft + buildings.non_residential_sqft
+
 @sim.column('buildings', 'sqft_per_job', cache=True)
 def sqft_per_job(buildings, building_sqft_per_job):
     bldgs = buildings.to_frame(['luz_id', 'building_type_id'])
@@ -25,6 +29,10 @@ def sqft_per_job(buildings, building_sqft_per_job):
     merge_df.sqft_per_emp.fillna(-1, inplace=True)
     merge_df.loc[merge_df.sqft_per_emp < 40, 'sqft_per_emp'] = 40
     return merge_df.sqft_per_emp
+
+@sim.column('nodes', 'nonres_occupancy_3000m')
+def nonres_occupancy_3000m(nodes):
+    return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
 
 @sim.column('parcels', 'parcel_acres')
 def parcel_acres(parcels):
@@ -52,6 +60,7 @@ def build_networks(parcels):
     p = parcels.to_frame(parcels.local_columns)
 
     p['node_id'] = net.get_node_ids(p['x'], p['y'])
+    #p.to_csv('data/parcels.csv')
     sim.add_table("parcels", p)
 
 @sim.model('scheduled_development_events')
@@ -76,9 +85,20 @@ def scheduled_development_events(scheduled_development_events, buildings):
 
 sim.run(['build_networks'])
 
-sim.run(['scheduled_development_events', 'neighborhood_vars'], years=xrange(2015,2015))
+sim.run(['scheduled_development_events', 'neighborhood_vars'
+         #,'rsh_simulate'
+         ,'nrh_simulate']) #, years=xrange(2015,2015))
 
 nodes = sim.get_table('nodes')
+
 results_df = nodes.to_frame()
 
 results_df.to_csv('data/results.csv')
+
+
+print results_df[results_df.node_id == 87868]
+
+#sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
+
+
+
