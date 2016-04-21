@@ -10,17 +10,40 @@ from urbansim_defaults import models
 def building_sqft_per_job(store):
     return store['building_sqft_per_job']
 
+
 @sim.table('scheduled_development_events', cache=True)
 def scheduled_development_events(store):
     return store['scheduled_development_events']
+
+
+@sim.column('buildings', 'building_sqft')
+def building_sqft(buildings):
+    return buildings.residential_sqft + buildings.non_residential_sqft
+
+
+@sim.column('buildings', 'distance_to_coast')
+def distance_to_coaset(buildings, parcels):
+    return misc.reindex(parcels.distance_to_coast, buildings.parcel_id)
+
+
+@sim.column('buildings', 'distance_to_freeway')
+def distance_to_freeway(buildings, parcels):
+    return misc.reindex(parcels.distance_to_freeway, buildings.parcel_id)
+
+
+@sim.column('buildings', 'distance_to_onramp')
+def distance_to_onramp(settings, net, buildings):
+    ramp_distance = settings['build_networks']['on_ramp_distance']
+    distance_df = net.nearest_pois(ramp_distance, 'onramps', num_pois=1, max_distance=ramp_distance)
+    distance_df.columns = ['distance_to_onramp']
+    x = misc.reindex(distance_df.distance_to_onramp, buildings.node_id)
+    return x
+
 
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
     return misc.reindex(parcels.luz_id, buildings.parcel_id)
 
-@sim.column('buildings', 'building_sqft')
-def building_sqft(buildings):
-    return buildings.residential_sqft + buildings.non_residential_sqft
 
 @sim.column('buildings', 'sqft_per_job', cache=True)
 def sqft_per_job(buildings, building_sqft_per_job):
@@ -30,17 +53,21 @@ def sqft_per_job(buildings, building_sqft_per_job):
     merge_df.loc[merge_df.sqft_per_emp < 40, 'sqft_per_emp'] = 40
     return merge_df.sqft_per_emp
 
+
 @sim.column('nodes', 'nonres_occupancy_3000m')
 def nonres_occupancy_3000m(nodes):
     return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
+
 
 @sim.column('parcels', 'parcel_acres')
 def parcel_acres(parcels):
     return parcels.acres
 
+
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
     return settings['building_sqft_per_job']
+
 
 def get_year():
     year = sim.get_injectable('year')
@@ -48,20 +75,30 @@ def get_year():
         year = 2015
     return year
 
+
 @sim.model('build_networks')
-def build_networks(parcels):
-    st = pd.HDFStore('data/urbansim.h5', "r")
-    nodes, edges = st.nodes, st.edges
+def build_networks(settings , store, parcels):
+    edges, nodes = store['edges'], store['nodes']
     net = pdna.Network(nodes["x"], nodes["y"], edges["from"], edges["to"],
                        edges[["weight"]])
-    net.precompute(3000)
+
+    max_distance = settings['build_networks']['max_distance']
+    net.precompute(max_distance)
+
+    #SETUP POI COMPONENTS
+    on_ramp_nodes = nodes[nodes.on_ramp]
+    net.init_pois(num_categories=1, max_dist=max_distance, max_pois=1)
+    net.set_pois('onramps', on_ramp_nodes.x, on_ramp_nodes.y)
+
     sim.add_injectable("net", net)
 
     p = parcels.to_frame(parcels.local_columns)
 
     p['node_id'] = net.get_node_ids(p['x'], p['y'])
+
     #p.to_csv('data/parcels.csv')
     sim.add_table("parcels", p)
+
 
 @sim.model('scheduled_development_events')
 def scheduled_development_events(scheduled_development_events, buildings):
@@ -95,8 +132,7 @@ results_df = nodes.to_frame()
 
 results_df.to_csv('data/results.csv')
 
-
-print results_df[results_df.node_id == 87868]
+sim.get_table('buildings').to_frame(['building_id','non_residential_price']).to_csv('data/buildings.csv')
 
 #sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
 

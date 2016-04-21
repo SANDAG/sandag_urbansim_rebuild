@@ -1,8 +1,8 @@
 store: urbansim.h5
 
 build_networks:
-  name: urbansim.h5
-  max_distance: 5 #Distance is time (minutes)
+  max_distance: 5280 #Distance is feet
+  on_ramp_distance: 2640
 
 aggregation_tables:
   - nodes

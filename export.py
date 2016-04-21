@@ -5,17 +5,18 @@ import pandas as pd
 
 urbansim_engine = create_engine(get_connection_string("configs/dbconfig.yml", 'urbansim_database'))
 
-nodes_sql = 'SELECT node as node_id, x, y FROM urbansim.nodes'
+nodes_sql = 'SELECT node as node_id, x, y, on_ramp FROM urbansim.nodes'
 edges_sql = 'SELECT from_node as [from], to_node as [to], distance as [weight] FROM urbansim.edges'
-parcels_sql = 'SELECT parcel_id, luz_id, parcel_acres as acres, centroid.STX as x, centroid.STY as y FROM urbansim.parcels'
-buildings_sql = 'SELECT building_id, parcel_id, development_type_id as building_type_id, COALESCE(residential_units, 0) as residential_units, residential_sqft, COALESCE(non_residential_sqft,0) as non_residential_sqft, 0 as non_residential_rent_per_sqft, COALESCE(year_built, -1) year_built FROM urbansim.buildings'
+parcels_sql = 'SELECT parcel_id, luz_id, parcel_acres as acres, zoning_id as zone_id, centroid.STX as x, centroid.STY as y, distance_to_coast, distance_to_freeway FROM urbansim.parcels'
+buildings_sql = 'SELECT building_id, parcel_id, development_type_id as building_type_id, COALESCE(residential_units, 0) as residential_units, residential_sqft, COALESCE(non_residential_sqft,0) as non_residential_sqft, 0 as non_residential_rent_per_sqft, COALESCE(year_built, -1) year_built, COALESCE(stories, 1) as stories FROM urbansim.buildings'
 households_sql = 'SELECT household_id, building_id, persons, age_of_head, income, children FROM urbansim.households'
 jobs_sql = 'SELECT job_id, building_id, sector_id FROM urbansim.jobs'
 building_sqft_per_job_sql = 'SELECT luz_id, development_type_id, sqft_per_emp FROM urbansim.building_sqft_per_job'
 scheduled_development_events_sql = """SELECT
                                          scheduled_development_event_id, parcel_id, development_type_id as building_type_id
                                          ,year_built, sqft_per_unit, residential_units, non_residential_sqft
-                                         ,improvement_value, res_price_per_sqft, nonres_rent_per_sqft as non_residential_rent_per_sqft FROM urbansim.scheduled_development_event"""
+                                         ,improvement_value, res_price_per_sqft, nonres_rent_per_sqft as non_residential_rent_per_sqft
+                                         ,COALESCE(stories,1) as stories FROM urbansim.scheduled_development_event"""
 
 nodes_df = pd.read_sql(nodes_sql, urbansim_engine, index_col='node_id')
 edges_df = pd.read_sql(edges_sql, urbansim_engine)
