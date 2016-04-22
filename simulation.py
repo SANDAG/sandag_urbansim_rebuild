@@ -5,6 +5,7 @@ import pandana as pdna
 import urbansim.sim.simulation as sim
 from urbansim.utils import misc
 from urbansim_defaults import models
+from urbansim_defaults import utils
 
 @sim.table('building_sqft_per_job', cache=True)
 def building_sqft_per_job(store):
@@ -36,9 +37,14 @@ def distance_to_onramp(settings, net, buildings):
     ramp_distance = settings['build_networks']['on_ramp_distance']
     distance_df = net.nearest_pois(ramp_distance, 'onramps', num_pois=1, max_distance=ramp_distance)
     distance_df.columns = ['distance_to_onramp']
-    x = misc.reindex(distance_df.distance_to_onramp, buildings.node_id)
-    return x
+    return misc.reindex(distance_df.distance_to_onramp, buildings.node_id)
 
+#@sim.column('buildings','distance_to_transit')
+#def distance_to_transit(settings, net, buildings):
+#    transit_distance = settings['build_networks']['transit_distance']
+#    distance_df = net.nearest_pois(transit_distance, 'transit', num_pois=1, max_distance=transit_distance)
+#    distance_df.columns = ['distance_to_transit']
+#    return misc.reindex(distance_df.distance_to_transit, buildings.node_id)
 
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
@@ -90,6 +96,10 @@ def build_networks(settings , store, parcels):
     net.init_pois(num_categories=1, max_dist=max_distance, max_pois=1)
     net.set_pois('onramps', on_ramp_nodes.x, on_ramp_nodes.y)
 
+#    transit = store.transit
+#    net.set_pois('transit', transit.x, transit.y)
+
+
     sim.add_injectable("net", net)
 
     p = parcels.to_frame(parcels.local_columns)
@@ -98,6 +108,12 @@ def build_networks(settings , store, parcels):
 
     #p.to_csv('data/parcels.csv')
     sim.add_table("parcels", p)
+
+
+@sim.model('nrh_simulate2')
+def nrh_simulate2(buildings, aggregations):
+    return utils.hedonic_simulate("nrh2.yaml", buildings, aggregations,
+                                  "non_residential_price")
 
 
 @sim.model('scheduled_development_events')
@@ -122,15 +138,16 @@ def scheduled_development_events(scheduled_development_events, buildings):
 
 sim.run(['build_networks'])
 
-sim.run(['scheduled_development_events', 'neighborhood_vars'
-         #,'rsh_simulate'
-         ,'nrh_simulate']) #, years=xrange(2015,2015))
+sim.run([#'scheduled_development_events'
+         'neighborhood_vars'
+         #,'rsh_simulate','nrh_simulate'
+         ,'nrh_simulate2']) #, years=xrange(2015,2015))
 
 nodes = sim.get_table('nodes')
 
 results_df = nodes.to_frame()
 
-results_df.to_csv('data/results.csv')
+#results_df.to_csv('data/results.csv')
 
 sim.get_table('buildings').to_frame(['building_id','non_residential_price']).to_csv('data/buildings.csv')
 
