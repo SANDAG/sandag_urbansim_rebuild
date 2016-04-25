@@ -53,12 +53,13 @@ def distance_to_school(settings, net, buildings):
     distance_df.columns = ['distance_to_school']
     return misc.reindex(distance_df.distance_to_school, buildings.node_id)
 
-#@sim.column('buildings','distance_to_transit')
-#def distance_to_transit(settings, net, buildings):
-#    transit_distance = settings['build_networks']['transit_distance']
-#    distance_df = net.nearest_pois(transit_distance, 'transit', num_pois=1, max_distance=transit_distance)
-#    distance_df.columns = ['distance_to_transit']
-#    return misc.reindex(distance_df.distance_to_transit, buildings.node_id)
+@sim.column('buildings','distance_to_transit')
+def distance_to_transit(settings, net, buildings):
+    transit_distance = settings['build_networks']['transit_distance']
+    distance_df = net.nearest_pois(transit_distance, 'transit', num_pois=1, max_distance=transit_distance)
+    distance_df.columns = ['distance_to_transit']
+    return misc.reindex(distance_df.distance_to_transit, buildings.node_id)
+
 
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
@@ -107,7 +108,7 @@ def build_networks(settings , store, parcels):
 
     #SETUP POI COMPONENTS
     on_ramp_nodes = nodes[nodes.on_ramp]
-    net.init_pois(num_categories=3, max_dist=max_distance, max_pois=1)
+    net.init_pois(num_categories=4, max_dist=max_distance, max_pois=1)
     net.set_pois('onramps', on_ramp_nodes.x, on_ramp_nodes.y)
 
     parks = store.parks
@@ -116,8 +117,8 @@ def build_networks(settings , store, parcels):
     schools = store.schools
     net.set_pois('schools', schools.x, schools.y)
 
-#    transit = store.transit
-#    net.set_pois('transit', transit.x, transit.y)
+    transit = store.transit
+    net.set_pois('transit', transit.x, transit.y)
 
 
     sim.add_injectable("net", net)

@@ -5,6 +5,7 @@ build_networks:
   on_ramp_distance: 2640
   parks_distance: 2640
   schools_distance: 5280
+  transit_distance: 2640
 
 aggregation_tables:
   - nodes
