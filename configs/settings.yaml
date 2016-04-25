@@ -3,6 +3,8 @@ store: urbansim.h5
 build_networks:
   max_distance: 5280 #Distance is feet
   on_ramp_distance: 2640
+  parks_distance: 2640
+  schools_distance: 5280
 
 aggregation_tables:
   - nodes

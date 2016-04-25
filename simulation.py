@@ -39,6 +39,20 @@ def distance_to_onramp(settings, net, buildings):
     distance_df.columns = ['distance_to_onramp']
     return misc.reindex(distance_df.distance_to_onramp, buildings.node_id)
 
+@sim.column('buildings', 'distance_to_park')
+def distance_to_park(settings, net, buildings):
+    park_distance = settings['build_networks']['parks_distance']
+    distance_df = net.nearest_pois(park_distance, 'parks', num_pois=1, max_distance=park_distance)
+    distance_df.columns = ['distance_to_park']
+    return misc.reindex(distance_df.distance_to_park, buildings.node_id)
+
+@sim.column('buildings','distance_to_school')
+def distance_to_school(settings, net, buildings):
+    school_distance = settings['build_networks']['schools_distance']
+    distance_df = net.nearest_pois(school_distance, 'schools', num_pois=1, max_distance=school_distance)
+    distance_df.columns = ['distance_to_school']
+    return misc.reindex(distance_df.distance_to_school, buildings.node_id)
+
 #@sim.column('buildings','distance_to_transit')
 #def distance_to_transit(settings, net, buildings):
 #    transit_distance = settings['build_networks']['transit_distance']
@@ -93,8 +107,14 @@ def build_networks(settings , store, parcels):
 
     #SETUP POI COMPONENTS
     on_ramp_nodes = nodes[nodes.on_ramp]
-    net.init_pois(num_categories=1, max_dist=max_distance, max_pois=1)
+    net.init_pois(num_categories=3, max_dist=max_distance, max_pois=1)
     net.set_pois('onramps', on_ramp_nodes.x, on_ramp_nodes.y)
+
+    parks = store.parks
+    net.set_pois('parks', parks.x, parks.y)
+
+    schools = store.schools
+    net.set_pois('schools', schools.x, schools.y)
 
 #    transit = store.transit
 #    net.set_pois('transit', transit.x, transit.y)
@@ -149,7 +169,7 @@ results_df = nodes.to_frame()
 
 #results_df.to_csv('data/results.csv')
 
-sim.get_table('buildings').to_frame(['building_id','non_residential_price']).to_csv('data/buildings.csv')
+sim.get_table('buildings').to_frame(['building_id','non_residential_price','distance_to_park','distance_to_school']).to_csv('data/buildings.csv')
 
 #sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
 
