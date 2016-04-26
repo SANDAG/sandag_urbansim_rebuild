@@ -79,11 +79,33 @@ def sqft_per_job(buildings, building_sqft_per_job):
 def nonres_occupancy_3000m(nodes):
     return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
 
+@sim.column('nodes', 'res_occupancy_3000m')
+def res_occupancy_3000m(nodes):
+    return nodes.households_3000m / (nodes.residential_units_3000m + 1.0)
 
 @sim.column('parcels', 'parcel_acres')
 def parcel_acres(parcels):
     return parcels.acres
 
+@sim.column('buildings', 'year_built_1940to1950')
+def year_built_1940to1950(buildings):
+    return (buildings.year_built >= 1940) & (buildings.year_built < 1950)
+
+@sim.column('buildings', 'year_built_1950to1960')
+def year_built_1950to1960(buildings):
+    return (buildings.year_built >= 1950) & (buildings.year_built < 1960)
+
+@sim.column('buildings', 'year_built_1960to1970')
+def year_built_1960to1970(buildings):
+    return (buildings.year_built >= 1960) & (buildings.year_built < 1970)
+
+@sim.column('buildings', 'year_built_1970to1980')
+def year_built_1970to1980(buildings):
+    return (buildings.year_built >= 1970) & (buildings.year_built < 1980)
+
+@sim.column('buildings', 'year_built_1980to1990')
+def year_built_1980to1990(buildings):
+    return (buildings.year_built >= 1980) & (buildings.year_built < 1990)
 
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
@@ -161,8 +183,8 @@ sim.run(['build_networks'])
 
 sim.run([#'scheduled_development_events'
          'neighborhood_vars'
-         #,'rsh_simulate','nrh_simulate'
-         ,'nrh_simulate2']) #, years=xrange(2015,2015))
+         ,'rsh_simulate']) #,'nrh_simulate'
+         #,'nrh_simulate2']) #, years=xrange(2015,2015))
 
 nodes = sim.get_table('nodes')
 
