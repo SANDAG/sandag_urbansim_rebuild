@@ -13,4 +13,4 @@ aggregation_tables:
 households_transition:
   add_columns:
     - income_quartile
-  total_column: total_number_of_households
+  total_column: hh #total_number_of_households

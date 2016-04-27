@@ -84,12 +84,10 @@ def sqft_per_job(buildings, building_sqft_per_job):
 
 @sim.column('households', 'income_quartile', cache=True)
 def income_quartile(households):
-
-    s = pd.Series(pd.qcut(households.income, 4, labels=False),
-                  index=households.index)
-    # convert income quartile from 0-3 to 1-4
-    s = s.add(1)
-    return s
+    hh_inc = households.to_frame(['household_id', 'income'])
+    bins = [hh_inc.income.min()-1, 30000, 59999, 99999, 149999, hh_inc.max()+1]
+    group_names = range(1,6)
+    return pd.cut(hh_inc.income, bins, labels=group_names)
 
 
 @sim.column('nodes', 'nonres_occupancy_3000m')
@@ -201,7 +199,8 @@ sim.run(['build_networks'])
 sim.run([#'scheduled_development_events'
          'neighborhood_vars'
          ,'rsh_simulate','nrh_simulate','nrh_simulate2'
-         ,'households_transition'], years=xrange(2015,2015))
+         ,'households_transition',  "hlcm_luz_simulate"
+], years=range(2032,2033))
 
 nodes = sim.get_table('nodes')
 
@@ -210,6 +209,7 @@ results_df = nodes.to_frame()
 #results_df.to_csv('data/results.csv')
 
 sim.get_table('buildings').to_frame(['building_id','residential_price','non_residential_price','distance_to_park','distance_to_school']).to_csv('data/buildings.csv')
+sim.get_table('households').to_frame(['household_id', 'building_id', 'persons', 'age_of_head', 'income', 'income_quartile']).to_csv('data/households.csv')
 
 #sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
 
