@@ -199,7 +199,7 @@ sim.run(['build_networks'])
 sim.run([#'scheduled_development_events'
          'neighborhood_vars'
          ,'rsh_simulate','nrh_simulate','nrh_simulate2'
-         ,'households_transition',  "hlcm_luz_simulate"
+         ,'households_transition',  "hlcm_simulate"
 ], years=range(2032,2033))
 
 nodes = sim.get_table('nodes')
