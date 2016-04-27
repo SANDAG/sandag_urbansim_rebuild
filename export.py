@@ -20,6 +20,7 @@ scheduled_development_events_sql = """SELECT
 schools_sql = """SELECT objectID as id, Shape.STX as x ,Shape.STY as y FROM gis.schools WHERE SOCType IN ('Junior High Schools (Public)','K-12 Schools (Public)','Preschool','Elemen Schools In 1 School Dist. (Public)','Elementary Schools (Public)','Intermediate/Middle Schools (Public)','High Schools (Public)','Private')"""
 parks_sql = """SELECT subparcel as park_id, shape.STCentroid().STX x, shape.STCentroid().STY y FROM gis.landcore WHERE lu IN (7207,7210,7211,7600,7601,7604,7605)"""
 transit_sql = 'SELECT x, y, stopnum FROM gis.transit_stops'
+household_controls_sql = """SELECT yr as [year], hh_income_id as income_quartile, hh FROM isam.defm.households WHERE dem_version = 'S0021' and eco_version = '001' AND yr >= 2015"""
 
 nodes_df = pd.read_sql(nodes_sql, urbansim_engine, index_col='node_id')
 edges_df = pd.read_sql(edges_sql, urbansim_engine)
@@ -32,6 +33,7 @@ scheduled_development_events_df = pd.read_sql(scheduled_development_events_sql, 
 schools_df = pd.read_sql(schools_sql, urbansim_engine, index_col='id')
 parks_df = pd.read_sql(parks_sql, urbansim_engine, index_col='park_id')
 transit_df = pd.read_sql(transit_sql, urbansim_engine)
+household_controls_df = pd.read_sql(household_controls_sql, urbansim_engine, index_col='year')
 
 building_sqft_per_job_df.sort_values(['luz_id', 'development_type_id'], inplace=True)
 building_sqft_per_job_df.set_index(['luz_id', 'development_type_id'], inplace=True)
@@ -51,3 +53,4 @@ with pd.HDFStore('data/urbansim.h5', mode='w') as store:
     store.put('schools', schools_df, format='t')
     store.put('parks', parks_df, format='t')
     store.put('transit', transit_df, format='t')
+    store.put('household_controls', household_controls_df, format='t')

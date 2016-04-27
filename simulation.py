@@ -2,14 +2,21 @@ import numpy as np
 import os
 import pandas as pd
 import pandana as pdna
+from urbansim.models import transition
 import urbansim.sim.simulation as sim
 from urbansim.utils import misc
 from urbansim_defaults import models
 from urbansim_defaults import utils
 
+
 @sim.table('building_sqft_per_job', cache=True)
 def building_sqft_per_job(store):
     return store['building_sqft_per_job']
+
+
+@sim.table('household_controls', cache=True)
+def household_controls(store):
+    return store['household_controls']
 
 
 @sim.table('scheduled_development_events', cache=True)
@@ -73,6 +80,16 @@ def sqft_per_job(buildings, building_sqft_per_job):
     merge_df.sqft_per_emp.fillna(-1, inplace=True)
     merge_df.loc[merge_df.sqft_per_emp < 40, 'sqft_per_emp'] = 40
     return merge_df.sqft_per_emp
+
+
+@sim.column('households', 'income_quartile', cache=True)
+def income_quartile(households):
+
+    s = pd.Series(pd.qcut(households.income, 4, labels=False),
+                  index=households.index)
+    # convert income quartile from 0-3 to 1-4
+    s = s.add(1)
+    return s
 
 
 @sim.column('nodes', 'nonres_occupancy_3000m')
@@ -183,8 +200,8 @@ sim.run(['build_networks'])
 
 sim.run([#'scheduled_development_events'
          'neighborhood_vars'
-         ,'rsh_simulate']) #,'nrh_simulate'
-         #,'nrh_simulate2']) #, years=xrange(2015,2015))
+         ,'rsh_simulate','nrh_simulate','nrh_simulate2'
+         ,'households_transition'], years=xrange(2015,2015))
 
 nodes = sim.get_table('nodes')
 
@@ -192,7 +209,7 @@ results_df = nodes.to_frame()
 
 #results_df.to_csv('data/results.csv')
 
-sim.get_table('buildings').to_frame(['building_id','non_residential_price','distance_to_park','distance_to_school']).to_csv('data/buildings.csv')
+sim.get_table('buildings').to_frame(['building_id','residential_price','non_residential_price','distance_to_park','distance_to_school']).to_csv('data/buildings.csv')
 
 #sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
 
