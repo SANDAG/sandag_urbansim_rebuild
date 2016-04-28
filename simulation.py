@@ -87,7 +87,7 @@ def income_quartile(households):
     hh_inc = households.to_frame(['household_id', 'income'])
     bins = [hh_inc.income.min()-1, 30000, 59999, 99999, 149999, hh_inc.max()+1]
     group_names = range(1,6)
-    return pd.cut(hh_inc.income, bins, labels=group_names)
+    return pd.cut(hh_inc.income, bins, labels=group_names).astype('int64')
 
 
 @sim.column('nodes', 'nonres_occupancy_3000m')
@@ -121,6 +121,11 @@ def year_built_1970to1980(buildings):
 @sim.column('buildings', 'year_built_1980to1990')
 def year_built_1980to1990(buildings):
     return (buildings.year_built >= 1980) & (buildings.year_built < 1990)
+
+@sim.column('buildings', 'sqft_per_unit', cache=True)
+def unit_sqft(buildings):
+    return (buildings.residential_sqft /
+            buildings.residential_units.replace(0, 1)).fillna(0).astype('int')
 
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
