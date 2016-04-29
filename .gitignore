@@ -1,3 +1,6 @@
+[python]
+*.pyc
+
 [pycharm]
 .idea/*
 
@@ -7,4 +10,5 @@ data/*
 dbconfig.yml
 
 [notbooks]
-notebook/*
+notebooks/*
+!noteboooks/Estimation.ipynb
