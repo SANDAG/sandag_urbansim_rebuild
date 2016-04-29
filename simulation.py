@@ -8,171 +8,6 @@ from urbansim.utils import misc
 from urbansim_defaults import models
 from urbansim_defaults import utils
 
-# from urbansim_defaults utils, change:
-# movers = movers.head(vacant_units.sum()) to
-# movers = movers.head(int(vacant_units.sum()))
-def lcm_simulate(cfg, choosers, buildings, join_tbls, out_fname,
-                 supply_fname, vacant_fname,
-                 enable_supply_correction=None):
-    """
-    Simulate the location choices for the specified choosers
-
-    Parameters
-    ----------
-    cfg : string
-        The name of the yaml config file from which to read the location
-        choice model
-    choosers : DataFrameWrapper
-        A dataframe of agents doing the choosing
-    buildings : DataFrameWrapper
-        A dataframe of buildings which the choosers are locating in and which
-        have a supply
-    join_tbls : list of strings
-        A list of land use dataframes to give neighborhood info around the
-        buildings - will be joined to the buildings using existing broadcasts.
-    out_fname : string
-        The column name to write the simulated location to
-    supply_fname : string
-        The string in the buildings table that indicates the amount of
-        available units there are for choosers, vacant or not
-    vacant_fname : string
-        The string in the buildings table that indicates the amount of vacant
-        units there will be for choosers
-    enable_supply_correction : Python dict
-        Should contain keys "price_col" and "submarket_col" which are set to
-        the column names in buildings which contain the column for prices and
-        an identifier which segments buildings into submarkets
-    """
-    cfg = misc.config(cfg)
-
-    choosers_df = utils.to_frame(choosers, [], cfg, additional_columns=[out_fname])
-
-    additional_columns = [supply_fname, vacant_fname]
-    if enable_supply_correction is not None and \
-            "submarket_col" in enable_supply_correction:
-        additional_columns += [enable_supply_correction["submarket_col"]]
-    if enable_supply_correction is not None and \
-            "price_col" in enable_supply_correction:
-        additional_columns += [enable_supply_correction["price_col"]]
-    locations_df = utils.to_frame(buildings, join_tbls, cfg,
-                            additional_columns=additional_columns)
-
-    available_units = buildings[supply_fname]
-    vacant_units = buildings[vacant_fname]
-
-    print "There are %d total available units" % available_units.sum()
-    print "    and %d total choosers" % len(choosers)
-    print "    but there are %d overfull buildings" % \
-          len(vacant_units[vacant_units < 0])
-
-    vacant_units = vacant_units[vacant_units > 0]
-
-    # sometimes there are vacant units for buildings that are not in the
-    # locations_df, which happens for reasons explained in the warning below
-    indexes = np.repeat(vacant_units.index.values,
-                        vacant_units.values.astype('int'))
-    isin = pd.Series(indexes).isin(locations_df.index)
-    missing = len(isin[isin == False])
-    indexes = indexes[isin.values]
-    units = locations_df.loc[indexes].reset_index()
-    utils.check_nas(units)
-
-    print "    for a total of %d temporarily empty units" % vacant_units.sum()
-    print "    in %d buildings total in the region" % len(vacant_units)
-
-    if missing > 0:
-        print "WARNING: %d indexes aren't found in the locations df -" % \
-            missing
-        print "    this is usually because of a few records that don't join "
-        print "    correctly between the locations df and the aggregations tables"
-
-    movers = choosers_df[choosers_df[out_fname] == -1]
-    print "There are %d total movers for this LCM" % len(movers)
-
-    if enable_supply_correction is not None:
-        assert isinstance(enable_supply_correction, dict)
-        assert "price_col" in enable_supply_correction
-        price_col = enable_supply_correction["price_col"]
-        assert "submarket_col" in enable_supply_correction
-        submarket_col = enable_supply_correction["submarket_col"]
-
-        lcm = utils.yaml_to_class(cfg).from_yaml(str_or_buffer=cfg)
-
-        if enable_supply_correction.get("warm_start", False) is True:
-            raise NotImplementedError()
-
-        multiplier_func = enable_supply_correction.get("multiplier_func", None)
-        if multiplier_func is not None:
-            multiplier_func = sim.get_injectable(multiplier_func)
-
-        kwargs = enable_supply_correction.get('kwargs', {})
-        new_prices, submarkets_ratios = supply_and_demand(
-            lcm,
-            movers,
-            units,
-            submarket_col,
-            price_col,
-            base_multiplier=None,
-            multiplier_func=multiplier_func,
-            **kwargs)
-
-        # we will only get back new prices for those alternatives
-        # that pass the filter - might need to specify the table in
-        # order to get the complete index of possible submarkets
-        submarket_table = enable_supply_correction.get("submarket_table", None)
-        if submarket_table is not None:
-            submarkets_ratios = submarkets_ratios.reindex(
-                sim.get_table(submarket_table).index).fillna(1)
-            # write final shifters to the submarket_table for use in debugging
-            sim.get_table(submarket_table)["price_shifters"] = submarkets_ratios
-
-        print "Running supply and demand"
-        print "Simulated Prices"
-        print buildings[price_col].describe()
-        print "Submarket Price Shifters"
-        print submarkets_ratios.describe()
-        # we want new prices on the buildings, not on the units, so apply
-        # shifters directly to buildings and ignore unit prices
-        sim.add_column(buildings.name,
-                       price_col+"_hedonic", buildings[price_col])
-        new_prices = buildings[price_col] * \
-            submarkets_ratios.loc[buildings[submarket_col]].values
-        buildings.update_col_from_series(price_col, new_prices)
-        print "Adjusted Prices"
-        print buildings[price_col].describe()
-
-    if len(movers) > vacant_units.sum():
-        print "WARNING: Not enough locations for movers"
-        print "    reducing locations to size of movers for performance gain"
-        movers = movers.head(int(vacant_units.sum()))
-
-    new_units, _ = utils.yaml_to_class(cfg).predict_from_cfg(movers, units, cfg)
-
-    # new_units returns nans when there aren't enough units,
-    # get rid of them and they'll stay as -1s
-    new_units = new_units.dropna()
-
-    # go from units back to buildings
-    new_buildings = pd.Series(units.loc[new_units.values][out_fname].values,
-                              index=new_units.index)
-
-    choosers.update_col_from_series(out_fname, new_buildings)
-    utils._print_number_unplaced(choosers, out_fname)
-
-    if enable_supply_correction is not None:
-        new_prices = buildings[price_col]
-        if "clip_final_price_low" in enable_supply_correction:
-            new_prices = new_prices.clip(lower=enable_supply_correction[
-                "clip_final_price_low"])
-        if "clip_final_price_high" in enable_supply_correction:
-            new_prices = new_prices.clip(upper=enable_supply_correction[
-                "clip_final_price_high"])
-        buildings.update_col_from_series(price_col, new_prices)
-
-    vacant_units = buildings[vacant_fname]
-    print "    and there are now %d empty units" % vacant_units.sum()
-    print "    and %d overfull buildings" % len(vacant_units[vacant_units < 0])
-
 
 @sim.table('building_sqft_per_job', cache=True)
 def building_sqft_per_job(store):
@@ -245,6 +80,12 @@ def sqft_per_job(buildings, building_sqft_per_job):
     merge_df.sqft_per_emp.fillna(-1, inplace=True)
     merge_df.loc[merge_df.sqft_per_emp < 40, 'sqft_per_emp'] = 40
     return merge_df.sqft_per_emp
+
+
+@sim.column('buildings', 'vacant_residential_units')
+def vacant_residential_units(buildings, households):
+    return buildings.residential_units.sub(
+        households.building_id.value_counts(), fill_value=0).astype('int64')
 
 
 @sim.column('households', 'income_quartile', cache=True)
@@ -363,13 +204,6 @@ def scheduled_development_events(scheduled_development_events, buildings):
         all_buildings = merge(b,sched_dev[b.columns])
         sim.add_table("buildings", all_buildings)
 
-@sim.model('hlcm_simulate')
-def hlcm_simulate(households, buildings, aggregations, settings):
-    return lcm_simulate("hlcm.yaml", households, buildings,
-                              aggregations,
-                              "building_id", "residential_units",
-                              "vacant_residential_units",
-                              settings.get("enable_supply_correction", None))
 
 sim.run(['build_networks'])
 
@@ -377,7 +211,8 @@ sim.run([#'scheduled_development_events'
          'neighborhood_vars'
          ,'rsh_simulate','nrh_simulate','nrh_simulate2'
          ,'households_transition',  "hlcm_simulate"
-], years=range(2032,2033))
+         #,"price_vars"
+], years=range(2015,2016))
 
 nodes = sim.get_table('nodes')
 
