@@ -14,3 +14,38 @@ households_transition:
   add_columns:
     - income_quartile
   total_column: hh #total_number_of_households
+
+# this maps building type ids to general building types
+# basically just reduces dimensionality
+building_type_map:
+  1: Other
+  2: Industrial
+  3: Industrial
+  4: Office
+  5: Retail
+  6: Other
+  7: Other
+  8: Other
+  9: Other
+  10: Other
+  11: Other
+  12: Other
+  13: Other
+  14: Other
+  15: Other
+  16: Other
+  17: Other
+  18: Other
+  19: Residential
+  20: Residential
+  21: Residential
+  22: Other
+  23: Other
+  24: Other
+  25: Other
+  26: Other
+  27: Other
+  28: Other
+  29: Other
+  30: Other
+  31: Other

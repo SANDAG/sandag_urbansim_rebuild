@@ -211,16 +211,11 @@ sim.run([#'scheduled_development_events'
          'neighborhood_vars'
          ,'rsh_simulate','nrh_simulate','nrh_simulate2'
          ,'households_transition',  "hlcm_simulate"
-         #,"price_vars"
+         ,"price_vars"
 ], years=range(2015,2016))
 
-nodes = sim.get_table('nodes')
-
-results_df = nodes.to_frame()
-
-#results_df.to_csv('data/results.csv')
-
-sim.get_table('buildings').to_frame(['building_id','residential_price','non_residential_price','distance_to_park','distance_to_school']).to_csv('data/buildings.csv')
+sim.get_table('nodes').to_frame().to_csv('data/nodes.csv')
+sim.get_table('buildings').to_frame(['building_id','residential_price','non_residential_price','distance_to_park','distance_to_school',]).to_csv('data/buildings.csv')
 sim.get_table('households').to_frame(['household_id', 'building_id', 'persons', 'age_of_head', 'income', 'income_quartile']).to_csv('data/households.csv')
 
 #sim.get_table('parcels').to_frame().to_csv('data/parcels.csv')
