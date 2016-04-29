@@ -3,5 +3,8 @@
 
 [data]
 data/*
+!data/simulation_results.qgs
 dbconfig.yml
-*.h5
+
+[notbooks]
+notebook/*
