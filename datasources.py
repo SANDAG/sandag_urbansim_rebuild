@@ -10,6 +10,9 @@ def building_sqft_per_job(store):
 def household_controls(store):
     return store['household_controls']
 
+@sim.table('employment_controls', cache=True)
+def employment_controls(store):
+    return store['employment_controls']
 
 @sim.table('scheduled_development_events', cache=True)
 def scheduled_development_events(store):

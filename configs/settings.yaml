@@ -15,6 +15,11 @@ households_transition:
     - income_quartile
   total_column: hh #total_number_of_households
 
+jobs_transition:
+  add_columns:
+    - sector_id
+  total_column: number_of_jobs
+
 # this maps building type ids to general building types
 # basically just reduces dimensionality
 building_type_map:
