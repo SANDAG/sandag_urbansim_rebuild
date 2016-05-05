@@ -36,6 +36,24 @@ feasibility:
     - max_far_from_heights
     - building_purchase_price
     - building_purchase_price_sqft
+  msa_id:
+    nonres_price_shifter:
+      0: 0.59
+      1: 0.74
+      2: 1.26
+      3: 1.66
+      4: 1.46
+      5: 1.66
+      6: 1
+    res_price_shifter:
+      0: 0.42
+      1: 0.54
+      2: 1.18
+      3: 1.66
+      4: 1.38
+      5: 1.66
+      6: 1
+
 
 # this maps building type ids to general building types
 # basically just reduces dimensionality
