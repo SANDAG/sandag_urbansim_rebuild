@@ -20,6 +20,23 @@ jobs_transition:
     - sector_id
   total_column: number_of_jobs
 
+feasibility:
+  parcel_filter: newest_building < 2010
+  residential_to_yearly: True
+  pass_through:
+    - oldest_building
+    - total_sqft
+    - max_far
+    - max_dua
+    - land_cost
+    - residential
+    - min_max_fars
+    - max_far_from_dua
+    - max_height
+    - max_far_from_heights
+    - building_purchase_price
+    - building_purchase_price_sqft
+
 # this maps building type ids to general building types
 # basically just reduces dimensionality
 building_type_map:

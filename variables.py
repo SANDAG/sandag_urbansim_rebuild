@@ -50,6 +50,16 @@ def distance_to_transit(settings, net, buildings):
     return misc.reindex(distance_df.distance_to_transit, buildings.node_id)
 
 
+@sim.column('buildings', 'is_office')
+def is_office(buildings):
+    return (buildings.building_type_id == 4).astype('int')
+
+
+@sim.column('buildings', 'is_retail')
+def is_retail(buildings):
+    return (buildings.building_type_id == 5).astype('int')
+
+
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
     return misc.reindex(parcels.luz_id, buildings.parcel_id)
@@ -127,3 +137,43 @@ def unit_sqft(buildings):
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
     return settings['building_sqft_per_job']
+
+
+@sim.injectable('parcel_sales_price_sqft_func', autocall=False)
+def parcel_sales_price_sqft(use):
+    s = parcel_average_price(use)
+    if use == "residential": s *= 1.2
+    return s
+
+
+@sim.injectable('parcel_average_price', autocall=False)
+def parcel_average_price(use):
+    return misc.reindex(sim.get_table('nodes')[use],
+                        sim.get_table('parcels').node_id)
+
+
+@sim.injectable('parcel_is_allowed_func', autocall=False)
+def parcel_is_allowed(form):
+    parcels = sim.get_table('parcels')
+    zoning_allowed_uses = sim.get_table('zoning_allowed_uses').to_frame()
+
+    if form == 'sf_detached':
+        allowed = zoning_allowed_uses[19]
+    elif form == 'sf_attached':
+        allowed = zoning_allowed_uses[20]
+    elif form == 'mf_residential':
+        allowed = zoning_allowed_uses[21]
+    elif form == 'light_industrial':
+        allowed = zoning_allowed_uses[2]
+    elif form == 'heavy_industrial':
+        allowed = zoning_allowed_uses[3]
+    elif form == 'office':
+        allowed = zoning_allowed_uses[4]
+    elif form == 'retail':
+        allowed = zoning_allowed_uses[5]
+    else:
+        df = pd.DataFrame(index=parcels.index)
+        df['allowed'] = True
+        allowed = df.allowed
+
+    return allowed

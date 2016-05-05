@@ -9,8 +9,8 @@ sim.run(['build_networks'])
 
 sim.run([#'scheduled_development_events'
          'neighborhood_vars','rsh_simulate','nrh_simulate','nrh_simulate2'
-         ,'households_transition', "hlcm_simulate"
-         ,"price_vars", 'jobs_transition'
+         ,'jobs_transition',"elcm_simulate",'households_transition', "hlcm_simulate"
+         ,"price_vars","feasibility"
 ], years=range(2015,2016))
 
 sim.get_table('nodes').to_frame().to_csv('data/nodes.csv')

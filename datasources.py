@@ -1,4 +1,8 @@
+import numpy as np
+import pandas as pd
+
 import urbansim.sim.simulation as sim
+import urbansim.utils.misc as misc
 
 
 @sim.table('building_sqft_per_job', cache=True)
@@ -6,14 +10,33 @@ def building_sqft_per_job(store):
     return store['building_sqft_per_job']
 
 
-@sim.table('household_controls', cache=True)
-def household_controls(store):
-    return store['household_controls']
-
 @sim.table('employment_controls', cache=True)
 def employment_controls(store):
     return store['employment_controls']
 
+
+@sim.table('household_controls', cache=True)
+def household_controls(store):
+    return store['household_controls']
+
+
 @sim.table('scheduled_development_events', cache=True)
 def scheduled_development_events(store):
     return store['scheduled_development_events']
+
+
+@sim.table('zoning_allowed_uses', cache=True)
+def zoning_allowed_uses(store, parcels):
+    zoning_allowed_df = store['zoning_allowed_uses']
+    parcels = parcels.to_frame(columns = ['zoning_id',])
+    allowed_df = pd.DataFrame(index = parcels.index)
+
+    for devtype in np.unique(zoning_allowed_df.development_type_id):
+        devtype_allowed = zoning_allowed_df[zoning_allowed_df.development_type_id == devtype].set_index('zoning_id')
+        allowed = misc.reindex(devtype_allowed.development_type_id, parcels.zoning_id)
+        df = pd.DataFrame(index=allowed.index)
+        df['allowed'] = False
+        df[~allowed.isnull()] = True
+        allowed_df[devtype] = df.allowed
+
+    return allowed_df
