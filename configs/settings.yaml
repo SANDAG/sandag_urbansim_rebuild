@@ -63,6 +63,11 @@ feasibility:
 #  luz_shifter:
 #    0: 0.78
 
+residential_developer:
+  target_vacancy: .08
+  min_unit_size: 1000
+  bldg_sqft_per_job: 400
+
 non_residential_developer:
   target_vacancy: .49
   bldg_sqft_per_job: 400

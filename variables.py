@@ -215,6 +215,9 @@ def form_to_btype(row):
         return 5
     if row.form == 'industrial':
         return 2
+    if row.form == 'residential':
+        return 19
+
 
 
 @sim.injectable('parcel_sales_price_sqft_func', autocall=False)
