@@ -63,6 +63,9 @@ feasibility:
 #  luz_shifter:
 #    0: 0.78
 
+non_residential_developer:
+  target_vacancy: .49
+  bldg_sqft_per_job: 400
 
 
 # this maps building type ids to general building types

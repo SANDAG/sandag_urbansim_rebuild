@@ -193,9 +193,28 @@ def total_sqft(parcels, buildings):
 
 
 ###### MISCELLANEOUS #######
+@sim.injectable('add_extra_columns_func', autocall=False)
+def add_extra_colums(df):
+    buildings = sim.get_table('buildings')
+    for col_name in buildings.local_columns:
+        if col_name not in df.columns:
+            df[col_name] = 0
+    return df
+
+
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
     return settings['building_sqft_per_job']
+
+
+@sim.injectable('form_to_btype_func', autocall=False)
+def form_to_btype(row):
+    if row.form == 'office':
+        return 4
+    if row.form == 'retail':
+        return 5
+    if row.form == 'industrial':
+        return 2
 
 
 @sim.injectable('parcel_sales_price_sqft_func', autocall=False)
