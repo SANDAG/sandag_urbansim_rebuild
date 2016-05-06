@@ -1,8 +1,9 @@
+import numpy as np
 import pandas as pd
 import urbansim.sim.simulation as sim
 from urbansim.utils import misc
 
-
+#####  BUILDINGS #####
 @sim.column('buildings', 'building_sqft')
 def building_sqft(buildings):
     return buildings.residential_sqft + buildings.non_residential_sqft
@@ -74,33 +75,15 @@ def sqft_per_job(buildings, building_sqft_per_job):
     return merge_df.sqft_per_emp
 
 
+@sim.column('buildings', 'sqft_per_unit', cache=True)
+def unit_sqft(buildings):
+    return (buildings.residential_sqft /
+            buildings.residential_units.replace(0, 1)).fillna(0).astype('int')
+
 @sim.column('buildings', 'vacant_residential_units')
 def vacant_residential_units(buildings, households):
     return buildings.residential_units.sub(
         households.building_id.value_counts(), fill_value=0).astype('int64')
-
-
-@sim.column('households', 'income_quartile', cache=True)
-def income_quartile(households):
-    hh_inc = households.to_frame(['household_id', 'income'])
-    bins = [hh_inc.income.min()-1, 30000, 59999, 99999, 149999, hh_inc.max()+1]
-    group_names = range(1,6)
-    return pd.cut(hh_inc.income, bins, labels=group_names).astype('int64')
-
-
-@sim.column('nodes', 'nonres_occupancy_3000m')
-def nonres_occupancy_3000m(nodes):
-    return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
-
-
-@sim.column('nodes', 'res_occupancy_3000m')
-def res_occupancy_3000m(nodes):
-    return nodes.households_3000m / (nodes.residential_units_3000m + 1.0)
-
-
-@sim.column('parcels', 'parcel_acres')
-def parcel_acres(parcels):
-    return parcels.acres
 
 
 @sim.column('buildings', 'year_built_1940to1950')
@@ -128,12 +111,71 @@ def year_built_1980to1990(buildings):
     return (buildings.year_built >= 1980) & (buildings.year_built < 1990)
 
 
-@sim.column('buildings', 'sqft_per_unit', cache=True)
-def unit_sqft(buildings):
-    return (buildings.residential_sqft /
-            buildings.residential_units.replace(0, 1)).fillna(0).astype('int')
+##### HOUSEHOLDS #####
+@sim.column('households', 'income_quartile', cache=True)
+def income_quartile(households):
+    hh_inc = households.to_frame(['household_id', 'income'])
+    bins = [hh_inc.income.min()-1, 30000, 59999, 99999, 149999, hh_inc.max()+1]
+    group_names = range(1,6)
+    return pd.cut(hh_inc.income, bins, labels=group_names).astype('int64')
 
 
+#####  NODES #######
+@sim.column('nodes', 'nonres_occupancy_3000m')
+def nonres_occupancy_3000m(nodes):
+    return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
+
+
+@sim.column('nodes', 'res_occupancy_3000m')
+def res_occupancy_3000m(nodes):
+    return nodes.households_3000m / (nodes.residential_units_3000m + 1.0)
+
+
+###### PARCELS ######
+@sim.column('parcels', 'land_cost')
+def parcel_land_cost(settings, parcels):
+    return parcels.building_purchase_price + parcels.parcel_size * settings['default_land_cost']
+
+
+@sim.column('parcels', 'max_dua', cache=True)
+def parcel_max_dua(parcels, zoning):
+    sr = misc.reindex(zoning.max_dua, parcels.zoning_id)
+    return sr.apply(np.floor).fillna(0).astype('int32')
+
+
+@sim.column('parcels', 'max_far', cache=True)
+def parcel_max_far(parcels, zoning):
+    sr = misc.reindex(zoning.max_far, parcels.zoning_id)
+    return sr.fillna(1).astype('int32')
+
+##Placeholder-  building height currently unconstrained (very high limit-  1000 ft.)
+@sim.column('parcels', 'max_height', cache=True)
+def parcel_max_height(parcels, zoning):
+    return misc.reindex(zoning.max_height, parcels.zoning_id).fillna(350)
+
+
+@sim.column('parcels', 'newest_building')
+def newest_building(parcels, buildings):
+    return buildings.year_built.groupby(buildings.parcel_id).max().\
+        reindex(parcels.index).fillna(0)
+
+
+@sim.column('parcels', 'parcel_size', cache=True)
+def parcel_size(parcels, settings):
+    return parcels.acres * 43560
+
+
+@sim.column('parcels', 'parcel_acres')
+def parcel_acres(parcels):
+    return parcels.acres
+
+
+@sim.column('parcels', 'lot_size_per_unit')
+def log_size_per_unit(parcels):
+    return parcels.parcel_size / parcels.total_residential_units.replace(0, 1)
+
+
+###### MISCELLANEOUS #######
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):
     return settings['building_sqft_per_job']

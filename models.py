@@ -1,4 +1,6 @@
 import pandana as pdna
+import pandas as pd
+from urbansim.developer import sqftproforma
 import urbansim.sim.simulation as sim
 from urbansim_defaults import utils
 
@@ -51,15 +53,14 @@ def build_networks(settings , store, parcels):
 
 """
 @sim.model('feasibility')
-def feasibility(parcels, settings,
+def feasibility(parcels, settings, fee_schedule,
                 #parcel_sales_price_sqft_func,
                 parcel_is_allowed_func):
     # Fee table preprocessing
-    fee_schedule = sim.get_table('fee_schedule').to_frame()
-    parcel_fee_schedule = sim.get_table('parcel_fee_schedule').to_frame()
-    parcels = sim.get_table('parcels').to_frame(columns = ['zoning_id','development_type_id'])
-    fee_schedule = fee_schedule.groupby(['fee_schedule_id', 'development_type_id']).development_fee_per_unit_space_initial.mean().reset_index()
-
+    #fee_schedule = sim.get_table('fee_schedule').to_frame()
+    #parcel_fee_schedule = sim.get_table('parcel_fee_schedule').to_frame()
+    parcels = parcels.to_frame(columns = ['zoning_id','development_type_id'])
+    #fee_schedule = fee_schedule.groupby(['fee_schedule_id', 'development_type_id']).development_fee_per_unit_space_initial.mean().reset_index()
     #parcel_use_allowed_callback = sim.get_injectable('parcel_is_allowed_func')
 
     def run_proforma_lookup(parcels, fees, pf, use, form, residential_to_yearly, parcel_filter = None):
@@ -69,7 +70,8 @@ def feasibility(parcels, settings,
         parcels[use] = misc.reindex(sim.get_table('nodes')[use], sim.get_table('parcels').node_id) - fees
 
         #Calibration shifters
-        calibration_shifters = pd.read_csv('.\\data\\calibration\\msa_shifters.csv').set_index('msa_id').to_dict()
+        calibration_shifters = ['feasibility']['msa_id']
+        #calibration_shifters = pd.read_csv('.\\data\\calibration\\msa_shifters.csv').set_index('msa_id').to_dict()
 
         if use == 'residential':
             shifter_name = 'res_price_shifter'
@@ -183,11 +185,13 @@ def feasibility(parcels, settings,
         pfc.costs = {use : [170.0, 190.0, 210.0, 240.0]}
 
         #Fees
-        fee_schedule_devtype = fee_schedule[fee_schedule.development_type_id == devtype_id]
-        parcel_fee_schedule_devtype = pd.merge(parcel_fee_schedule, fee_schedule_devtype, left_on = 'fee_schedule_id', right_on = 'fee_schedule_id')
-        parcel_fee_schedule_devtype['development_fee_per_unit'] = parcel_fee_schedule_devtype.development_fee_per_unit_space_initial*parcel_fee_schedule_devtype.portion
-        parcel_fees_processed = parcel_fee_schedule_devtype.groupby('parcel_id').development_fee_per_unit.sum()
-        fees = pd.Series(data = parcel_fees_processed, index = parcels.index).fillna(0)
+        fees = pd.Series(data=fee_schedule.loc[devtype_id].development_fee_per_unit_space_initial, index=parcels.index)
+        fees = fees.rename('development_fee_per_square_unit')
+        #fee_schedule_devtype = fee_schedule[fee_schedule.development_type_id == devtype_id]
+        #parcel_fee_schedule_devtype = pd.merge(parcel_fee_schedule, fee_schedule_devtype, left_on = 'fee_schedule_id', right_on = 'fee_schedule_id')
+        #parcel_fee_schedule_devtype['development_fee_per_unit'] = parcel_fee_schedule_devtype.development_fee_per_unit_space_initial*parcel_fee_schedule_devtype.portion
+        #parcel_fees_processed = parcel_fee_schedule_devtype.groupby('parcel_id').development_fee_per_unit.sum()
+        #fees = pd.Series(data = parcel_fees_processed, index = parcels.index).fillna(0)
 
         pf = sqftproforma.SqFtProForma(pfc)
 
@@ -213,11 +217,14 @@ def feasibility(parcels, settings,
             pfc.costs = {use : [160.0, 175.0, 200.0, 230.0]}
 
         #Fees
-        fee_schedule_devtype = fee_schedule[fee_schedule.development_type_id == devtype_id]
-        parcel_fee_schedule_devtype = pd.merge(parcel_fee_schedule, fee_schedule_devtype, left_on = 'fee_schedule_id', right_on = 'fee_schedule_id')
-        parcel_fee_schedule_devtype['development_fee_per_unit'] = parcel_fee_schedule_devtype.development_fee_per_unit_space_initial*parcel_fee_schedule_devtype.portion
-        parcel_fees_processed = parcel_fee_schedule_devtype.groupby('parcel_id').development_fee_per_unit.sum()
-        fees = pd.Series(data = parcel_fees_processed, index = parcels.index).fillna(0)
+        fees = pd.Series(data=fee_schedule.loc[devtype_id].development_fee_per_unit_space_initial, index=parcels.index)
+        fees = fees.rename('development_fee_per_square_unit')
+        #fee_schedule_devtype = fee_schedule[fee_schedule.development_type_id == devtype_id]
+        #parcel_fee_schedule_devtype = pd.merge(parcel_fee_schedule, fee_schedule_devtype, left_on = 'fee_schedule_id', right_on = 'fee_schedule_id')
+        #parcel_fee_schedule_devtype['development_fee_per_unit'] = parcel_fee_schedule_devtype.development_fee_per_unit_space_initial*parcel_fee_schedule_devtype.portion
+        #parcel_fee_schedule = pd.merge(parcels, fee_schedule_devtype, left_on='development_type_id', right_on='development_type_id')
+        #parcel_fees_processed = parcel_fee_schedule_devtype.groupby('parcel_id').development_fee_per_unit.sum()
+        #fees = pd.Series(data = parcel_fees_processed, index = parcels.index).fillna(0)
 
         pf = sqftproforma.SqFtProForma(pfc)
         fees = fees*pf.config.cap_rate
@@ -264,7 +271,6 @@ def feasibility(parcels, settings,
     far_predictions = pd.concat(d.values(), keys=d.keys(), axis=1)
     sim.add_table("feasibility", far_predictions)
 """
-
 
 @sim.model('jobs_transition')
 def jobs_transition(jobs, employment_controls, year, settings):

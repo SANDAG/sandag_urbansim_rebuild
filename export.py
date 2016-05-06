@@ -23,6 +23,8 @@ transit_sql = 'SELECT x, y, stopnum FROM gis.transit_stops'
 household_controls_sql = """SELECT yr as [year], hh_income_id as income_quartile, hh FROM isam.defm.households WHERE dem_version = 'S0021' and eco_version = '001' AND yr >= 2015"""
 employment_controls_sql = """SELECT yr as [year], jobs as number_of_jobs, sector_id FROM isam.defm.jobs WHERE dem_version = 'S0021' and eco_version = '001' AND yr >= 2015"""
 zoning_allowed_uses_sql = """SELECT development_type_id, zoning_id FROM urbansim.zoning_allowed_use ORDER BY development_type_id, zoning_id"""
+fee_schedule_sql = """SELECT development_type_id, development_fee_per_unit_space_initial FROM urbansim.fee_schedule"""
+zoning_sql = """SELECT zoning_id, max_dua, max_building_height as max_height, max_far FROM urbansim.zoning"""
 
 nodes_df = pd.read_sql(nodes_sql, urbansim_engine, index_col='node_id')
 edges_df = pd.read_sql(edges_sql, urbansim_engine)
@@ -38,6 +40,8 @@ transit_df = pd.read_sql(transit_sql, urbansim_engine)
 household_controls_df = pd.read_sql(household_controls_sql, urbansim_engine, index_col='year')
 employment_controls_df = pd.read_sql(employment_controls_sql, urbansim_engine, index_col='year')
 zoning_allowed_uses_df = pd.read_sql(zoning_allowed_uses_sql, urbansim_engine, index_col='development_type_id')
+fee_schedule_df = pd.read_sql(fee_schedule_sql, urbansim_engine, index_col='development_type_id')
+zoning_df = pd.read_sql(zoning_sql, urbansim_engine, index_col='zoning_id')
 
 building_sqft_per_job_df.sort_values(['luz_id', 'development_type_id'], inplace=True)
 building_sqft_per_job_df.set_index(['luz_id', 'development_type_id'], inplace=True)
@@ -60,3 +64,5 @@ with pd.HDFStore('data/urbansim.h5', mode='w') as store:
     store.put('household_controls', household_controls_df, format='t')
     store.put('employment_controls', employment_controls_df, format='t')
     store.put('zoning_allowed_uses', zoning_allowed_uses_df, format='t')
+    store.put('fee_schedule', fee_schedule_df, format='t')
+    store.put('zoning', zoning_df, format='t')
