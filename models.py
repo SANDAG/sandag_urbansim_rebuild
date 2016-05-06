@@ -87,8 +87,10 @@ def feasibility(parcels, settings, fee_schedule,
 
         #LUZ shifter
         if use == 'residential':
-            target_luz = pd.read_csv('.\\data\\calibration\\target_luz.csv').values.flatten()
-            luz_shifter = pd.read_csv('.\\data\\calibration\\luz_du_shifter.csv').values[0][0]
+            #target_luz = pd.read_csv('.\\data\\calibration\\target_luz.csv').values.flatten()
+            #luz_shifter = pd.read_csv('.\\data\\calibration\\luz_du_shifter.csv').values[0][0]
+            target_luz = np.array(settings['feasibility']['target_luz'].values(), dtype='int64')
+            luz_shifter = settings['feasibility']['luz_shifter'].values()[0]
             parcels[use][parcels.luz_id.isin(target_luz)] = parcels[use][parcels.luz_id.isin(target_luz)] * luz_shifter
 
         # convert from cost to yearly rent
