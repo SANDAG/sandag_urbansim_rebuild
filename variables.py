@@ -132,6 +132,17 @@ def res_occupancy_3000m(nodes):
 
 
 ###### PARCELS ######
+@sim.column('parcels', 'building_purchase_price')
+def building_purchase_price(parcels):
+    return (parcels.total_sqft * parcels.building_purchase_price_sqft).\
+        reindex(parcels.index).fillna(0)
+
+
+@sim.column('parcels', 'building_purchase_price_sqft')
+def building_purchase_price_sqft():
+    return parcel_average_price("residential") * .81
+
+
 @sim.column('parcels', 'land_cost')
 def parcel_land_cost(settings, parcels):
     return parcels.building_purchase_price + parcels.parcel_size * settings['default_land_cost']
@@ -173,6 +184,12 @@ def parcel_acres(parcels):
 @sim.column('parcels', 'lot_size_per_unit')
 def log_size_per_unit(parcels):
     return parcels.parcel_size / parcels.total_residential_units.replace(0, 1)
+
+
+@sim.column('parcels', 'total_sqft', cache=True)
+def total_sqft(parcels, buildings):
+    return buildings.building_sqft.groupby(buildings.parcel_id).sum().\
+        reindex(parcels.index).fillna(0)
 
 
 ###### MISCELLANEOUS #######
