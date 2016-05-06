@@ -56,12 +56,12 @@ feasibility:
 #      4: 1.38
 #      5: 1.66
 #      6: 1
-  target_luz:
-    0: 69
-    1: 70
-    2: 72
-  luz_shifter:
-    0: 0.78
+#  target_luz:
+#    0: 69
+#    1: 70
+#    2: 72
+#  luz_shifter:
+#    0: 0.78
 
 
 
